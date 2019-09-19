@@ -1,0 +1,3 @@
+uses(AndrewDougherty,SVRS).
+operates(AndrewDougherty,car[VIN -> 12345, Make -> <REDACTED>, Year -> <REDACTED>, Thing -> <REDACTED>]:car).
+owns(AndrewDougherty,car[VIN -> 12345, Make -> <REDACTED>, Year -> <REDACTED>, Thing -> <REDACTED>]:car).

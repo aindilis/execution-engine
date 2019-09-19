@@ -1,0 +1,46 @@
+% (Rules Engine
+%  (IF RULES
+
+%   )
+%  (TEMPORAL RULES
+%   (ALWAYS RULES
+%    )
+%   (DATE RULES)
+%   (SOMETIME RULES)
+%   (BEFORE X)
+%   (WHEN RULES
+%    (when 
+%     ()
+%     ())
+%    (when
+%     (return to computer)
+%     (check all skype messages))
+%    (when
+%     (I am tired)
+%     (consider recreation))
+%    )
+%   )
+%  (REACTIVITY RULES
+%   (IF (you receive a gift)
+%    (acknowledge it with a thank you note)
+%    )
+%   )
+%  )
+
+% we want to change the furnace filter every 3 months
+
+% whenever a computer is booted, make sure that if you haven't checked
+% in a while you check for a bios update for the mobo, etc., and if it
+% is available, schedule applying it.
+
+
+% add rules about how to handle reboots and such
+
+
+
+
+
+% (just a general rule don't do laundry in a multiunit condo unit
+%  if there are others renting an adjacent unit)
+
+%% (when there is a threat of severe storms, unlock the crawl space)

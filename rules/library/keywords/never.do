@@ -1,0 +1,8 @@
+(never (pull on a hangnail, always clip it.  therefore keep clippers very near by.  Hope this pain goes away.))
+(never (allow glasses and other containers to be open to the top, since this might accidentally trap insects and kill them))
+(never (allow standing water, especially near where insects are))
+(never (drink energy drinks when you have stayed up all night))
+(never (put wet towels on the floor))
+(never (leave the keys in the door))
+(never (leave a heating pad on overnight))
+(never (cook rotten meat, it won't fix it))

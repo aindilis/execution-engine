@@ -1,0 +1,200 @@
+#!/usr/bin/perl -w
+
+use BOSS::Config;
+# use Formalog::Client;
+# use KBS2::Util;
+use Manager::Dialog;
+use PerlLib::SwissArmyKnife;
+use KBS2::Util;
+
+$specification = q(
+	-v			Verbose
+	--bash <COMMAND>...	Process bash command
+
+	-p			Post-Hook
+);
+
+my $config =
+  BOSS::Config->new
+  (Spec => $specification);
+my $conf = $config->CLIConfig;
+
+my $verbose = 0;
+
+if (exists($conf->{'-v'}) or $ENV{EE_VERBOSE}) {
+  $verbose = 1;
+}
+
+my @goals = ('_prolog_list');
+
+if (exists $conf->{'--bash'}) {
+  my @command = @{$conf->{'--bash'}};
+  print "[ee]: ".Dumper({Command => \@command}) if $verbose;
+
+  if (0) {
+    # send this command to Prolog-Agent
+    my @list = @command;
+    unshift @list, '_prolog_list';
+    my $res1 = FormalogQuery
+      (
+       Agent => 'Prolog-Agent-Agent1',
+       Vars => ['_prolog_list',Var('?Results')],
+       Query => ['executionEngineCommands',\@list,Var('?Results')],
+      );
+    print Dumper({Res1 => $res1});
+  }
+
+  my $concat = join(' ',@command);
+  if (! exists $conf->{'-p'}) {
+
+    # process the command with Flora2 rules
+
+    # implement flora2 interface later, for now just have a sample
+
+
+    if ($concat =~ /^git --no-pager commit /) {
+      ContinueWithUser(Message => "Please make the commit message relatively detailed.")
+    }
+    if ($concat =~ /^rm /) {
+      # FIXME it should query for cancellation and if cancellation it
+      # should prevent the command from running.
+      ContinueWithUser(Message => "Please use caution with the 'rm' command.")
+    }
+    if ($concat =~ /\b(chess|qgo|xboard)\b/) {
+      # FIXME it should query for cancellation and if cancellation it
+      # should prevent the command from running.
+      DenyUser(Message => "Chess or go is forbidden.  Please work on CHAP2, study chess strategy and tactics from books or study math or AI instead, for instance watch the videos here: https://www.youtube.com/playlist?list=PLJ5C_6qdAvBG8HP77xIOVxH4Jzq3RQ9dI")
+	# ContinueWithUser(Message => "Please refrain from playing chess or go.  Please study math instead.")
+    }
+    if (($concat =~ /\b(apt-get|aptitude)\b/ and $concat =~ /\b(install|upgrade|dist-upgrade)\b/) or
+	($concat =~ /\bdpkg\b/ and $concat =~ /\b\-i\b/)) {
+      ContinueWithUser(Message => "Please run rkhunter --check and chkrootkit before upgrading any software, and afterwards run rkhunter --propupd.");
+    }
+    if (($concat =~ /\b(apt-get|aptitude)\b/ and $concat =~ /\b(upgrade|dist-upgrade)\b/)) {
+      ContinueWithUser(Message => "Please be sure to run system wide tests in /var/lib/myfrdcsa/codebases/minor/setanta-agent/system-tests before and after upgrades.");
+    }
+    if ($concat =~ /^(ssh|scp|ftp|rsync)\b/) {
+      # ContinueWithUser(Message => "FIXME: add to execution engine to check whether it is okay to make this connection.");
+      # verify local system has permission to handle the remote system's
+      # password, or access to the remote system
+
+      # now we have to parse the command line arguments.  we could use
+      # universal-parser here.
+
+      # assume for now that that is done
+      my ($localsystem,$remotesystem);
+
+      # look up the canonical names of these systems
+      my ($localsystemname,$remotesystemname);
+
+      # query the free life planner to see if we have permission
+      # hasPermssion();
+
+      # if we don't know, assume we don't, but don't tell the user, just
+      # give a "can't connect" or something.
+    }
+    if ($concat =~ /^(pdftotext)\s+()\b/) {
+      # we know
+    }
+    if ($concat =~ /^(sudo )?(shutdown)\b/) {
+      my $hostname = `hostname -f`;
+      chomp $hostname;
+      my $message = "You are on $hostname, are you sure you wish to restart or shut down?";
+      ContinueWithUser(Message => $message);
+    }
+    if ($concat =~ /^vagrant init\b/) {
+      my $message = "Check for latest VM base image at https://app.vagrantup.com/boxes/search";
+      ContinueWithUser(Message => $message);
+    }
+    if ($concat =~ /^mplayer /) {
+
+      # have to have a plan for playing the file
+      addGoal(Goal => ['playing_movie','bowfinger']);
+
+      # print the plan, then execute it
+      my $res1 = getPlan();
+      print Dumper({Res1 => $res1});
+
+      my $message = "Does this plan look good?";
+      ContinueWithUser(Message => $message);
+
+    }
+    # if ($concat =~ /^ls (--color=auto )?-([alrt]{4})$/) {
+    #   my $args = $1;
+    #   if ($args =~ /a/ and $args =~ /l/ and $args =~ /r/ and $args =~ /t/) {
+    #     my $message = "Please use the alias 'l' instead of 'ls -alrt'";
+    #     ContinueWithUser(Message => $message);
+    #   }
+    # }
+  } else {
+    if ($concat =~ /\b(apt-get|aptitude)\b/ and $concat =~ /\b(upgrade|dist-upgrade)\b/) {
+      ContinueWithUser(Message => "Afterward upgrading or dist-upgrading, run rkhunter --propupd.\nPlease be sure to run system wide tests in /var/lib/myfrdcsa/codebases/minor/setanta-agent/system-tests before and after upgrades.");
+    }
+  }
+}
+
+sub ContinueWithUser {
+  my %args = @_;
+  if ($ENV{'DISPLAY'} =~ /./) {
+    print $args{Message}."\n";
+    my $command = '(sleep 1 && wmctrl -F -a "Execution Engine" -b add,above) & (sleep 1 && wmctrl -F -a "Execution Engine") & (zenity --question --title "Execution Engine" --text '.shell_quote($args{Message}."\n\nContinue?").' 2> /dev/null)';
+    my $results = shellCommandGetBothReturnValueAndOuptut(Command => $command);
+    # print Dumper({Results => $results});
+    if ($results->{Retval} == '256') {
+      # this means no
+      # so somehow abort
+      exit 1;
+    } else {
+      # this is okay how
+      exit 0;
+    }
+  } else {
+    return ! Approve2(Message => $args{Message}."\n\nContinue?\n");
+  }
+}
+
+sub DenyUser {
+  my %args = @_;
+  if ($ENV{'DISPLAY'} =~ /./) {
+    print $args{Message}."\n";
+    my $command = '(sleep 1 && wmctrl -F -a "Execution Engine" -b add,above) & (sleep 1 && wmctrl -F -a "Execution Engine") & (zenity --error --title "Execution Engine" --text '.shell_quote($args{Message}).' 2> /dev/null)';
+    my $results = shellCommandGetBothReturnValueAndOuptut(Command => $command);
+    exit 1;
+  } else {
+    print $args{Message}."\n";
+    exit 1;
+  }
+}
+
+sub shellCommandGetBothReturnValueAndOuptut {
+  my %args = @_;
+  my $result = `$args{Command}`;
+  my $retval = $?;
+  return
+    {
+     Retval => $retval,
+     Output => $result,
+    };
+}
+
+sub addGoal {
+  my %args = @_;
+  push @goals, $args{Goal};
+}
+
+sub getPlan {
+  my %args = @_;
+  if (! $UNIVERSAL::agent) {
+    require UniLang::Util::TempAgent;
+    $UNIVERSAL::agent = UniLang::Util::TempAgent->new();
+  }
+  # invoke the flux planner
+  my $res1 = $UNIVERSAL::agent->MyAgent->QueryAgent
+    (
+     Receiver => 'Agent1',
+     Data => {
+	      Eval => [['_prolog_list',Var('?Result'),['getFLUXPlan',\@goals,Var('?Result')]]],
+	     },
+    );
+  return $res1->{Data}{Result};
+}
